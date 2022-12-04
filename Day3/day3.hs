@@ -1,3 +1,4 @@
+module Main where
 
 import Data.Char ( ord, isLower, isUpper )
 import Data.List ( nub )
