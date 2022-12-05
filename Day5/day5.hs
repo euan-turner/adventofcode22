@@ -49,8 +49,22 @@ executeCommands ([n,f,t]:cs) ss = executeCommands cs (executeCommand n f t ss)
         newSrc = tail src
         newSs = (t, newDest) : (f, newSrc) : remStacks
 
+executeNewCommands :: [[Int]] -> [(Int, [Char])] -> [(Int, [Char])]
+executeNewCommands [] ss = ss
+executeNewCommands ([n,f,t]:cs) ss = executeNewCommands cs (executeCommand [n,f,t] ss)
+  where 
+    executeCommand :: [Int] -> [(Int, [Char])] -> [(Int, [Char])]
+    executeCommand [n,f,t] ss = newSs
+      where
+        src = stackLookUp f ss  
+        dest = stackLookUp t ss  
+        remStacks = filter (\s -> s /= (f, src) && s /= (t, dest)) ss
+        newDest = take n src ++ dest
+        newSrc = drop n src
+        newSs = (t, newDest) : (f, newSrc) : remStacks
+
 getResult :: [[Int]] -> [(Int, [Char])] -> [(Int, [Char])]
-getResult is ss = sortBy (\(a,_) (b, _) -> compare a b) (executeCommands is ss)
+getResult is ss = sortBy (\(a,_) (b, _) -> compare a b) (executeNewCommands is ss)
 
 getTopBox :: [(Int, [Char])] -> [Char]
 getTopBox = map (\(_, (c:cs)) -> c)
@@ -63,3 +77,5 @@ main = do
   let coms = getCommands ls
   let result = getResult coms stacks
   putStrLn (show (getTopBox result))
+
+-- "BWNCQRMDB"
