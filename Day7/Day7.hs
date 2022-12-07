@@ -1,86 +1,48 @@
-module Main where 
+module Main where
 
+import Data.List (minimumBy)
 
-import Data.Char ( isDigit )
-
+data Use = CD Directory | File Size
+  deriving (Show, Eq)
 type Directory = String
-type Size = Int
-type SubDirectoryMap = [(Directory, [Directory])]
-type DirectoryFileSize = [(Directory, Size)]
+type Size = Int 
+type DirSizes = [(Directory, Size)]
+type Path = [Directory]
 
--- Returns first occurrence
-lookUp :: Directory -> a -> [(Directory, a)] -> a
-lookUp k def kvs
-  | null fil = def 
-  | otherwise = head fil
+formatInput :: [String] -> [Use]
+formatInput [] = []
+formatInput ("$ ls":ls) = formatInput ls 
+formatInput (('$':' ':'c':'d':' ':dir):ls) = (CD dir) : formatInput ls 
+formatInput (('d':'i':'r':' ':dir):ls) = formatInput ls
+formatInput (l:ls) = (File (read size :: Size)) : formatInput ls 
   where 
-    fil = [v | (k', v) <- kvs, k == k']
+    [size, name] = words l
 
-buildDirectory :: [String] -> DirectoryFileSize -> SubDirectoryMap -> (DirectoryFileSize, SubDirectoryMap)
-buildDirectory [] fs sm = (fs, sm)
-buildDirectory (('$':' ':'c':'d':' ':dir):ls) fs sm
-  | dir == ".." = buildDirectory ls fs sm
-  | otherwise = buildDirectory ls fs' sm'
+buildSizes :: [Use] -> DirSizes -> DirSizes
+buildSizes [] dss = dss
+buildSizes (CD "..":us) (ds:dss') = ds : buildSizes us dss'
+buildSizes (CD dir:us) dss = buildSizes us ((dir, 0):dss)
+buildSizes (File size:us) dss = buildSizes us dss'
   where 
-    fs' = fs ++ [(dir, directoryFileSize ls)]
-    sm' = sm ++ [(dir, directorySubdirectories ls)]
-buildDirectory (_:ls) fs sm = buildDirectory ls fs sm
+    dss' = map (\(d, s) -> (d, s + size)) dss
 
--- called after ls, should go until next cd
-directoryFileSize :: [String] -> Size
-directoryFileSize [] = 0
-directoryFileSize (('$':' ':'c':'d':' ':dir):cs)  = 0
-directoryFileSize (('d':'i':'r':dir):cs) = directoryFileSize cs
-directoryFileSize (file:cs) = (read size :: Size) + directoryFileSize cs
+smallTotal :: DirSizes -> Size 
+smallTotal ds = sum (map (\(d, s) -> s) (filter (\(d, s) -> s <= 100000) ds))
+
+toDelete :: DirSizes -> Size 
+toDelete dss = snd sup
   where 
-    size = (head . words) file
+    req = head [s | (d, s) <- dss, d == "/"] - 40000000
+    largeEnough = filter (\(d, s) -> s >= req) dss
+    sup = minimumBy (\(d, s) -> \(d', s') -> compare s s') largeEnough
 
-directorySubdirectories :: [String] -> [Directory]
-directorySubdirectories [] = []
-directorySubdirectories (('$':' ':'c':'d':' ':dir):ls) = []
-directorySubdirectories (('d':dir):ls) = (last . words) dir : directorySubdirectories ls
-directorySubdirectories (_:ls) = directorySubdirectories ls
-
-transitiveSubDirectories :: SubDirectoryMap -> SubDirectoryMap
-transitiveSubDirectories [] = []
-transitiveSubDirectories ((dir, sdirs):sm) = (dir, sdirs ++ sdirs') : sm'
-  where 
-    sm' = transitiveSubDirectories sm
-    sdirs' = concatMap (\sd -> lookUp sd [] sm') sdirs
-
-transitiveFileSize :: SubDirectoryMap -> DirectoryFileSize -> DirectoryFileSize
-transitiveFileSize _ [] = []
-transitiveFileSize sm ((dir, size): fs) = (dir, size + size') : fs'
-  where 
-    fs' = transitiveFileSize sm fs 
-    sdirs = lookUp dir [] sm 
-    size' = sum (map (\sd -> lookUp sd 0 fs) sdirs)
-
-showSM :: SubDirectoryMap -> String
-showSM [] = ""
-showSM ((dir, dirs) : sm) = dir ++ ": " ++  show dirs ++ "\n" ++ showSM sm 
-
-showFS :: DirectoryFileSize -> String 
-showFS [] = ""
-showFS ((dir, size): fs) = dir ++ ": " ++ show size ++ "\n" ++ showFS fs
-
-totalSize :: [String] -> Size 
-totalSize [] = 0
-totalSize (l@(d:r):ls)
-  | isDigit d = (read (head (words l)) :: Size) + totalSize ls
-  | otherwise = totalSize ls
+showSizes :: DirSizes -> String
+showSizes [] = ""
+showSizes ((d, s):dss) = d ++ " " ++ show s ++ "\n" ++ showSizes dss
 
 main :: IO ()
-main = do 
+main = do
   input <- readFile "files.txt"
-  let ls = lines input 
-  let ls' = filter (/= "$ ls") ls
-  let (fs, sm) = buildDirectory ls' [] []
-  let sm' = transitiveSubDirectories sm
-  let fs' = transitiveFileSize sm' fs
-  putStrLn (showFS (take 10 fs))
-  putStrLn (showFS (take 10 fs'))
-
-  -- let less = filter (\(_, s) -> s <= 100000) fs'
-  -- let total = sum (map snd less)
-  -- putStrLn (show total)
+  let fls = (formatInput . lines) input
+  let sizes = buildSizes fls []
+  putStrLn (show (toDelete sizes))
