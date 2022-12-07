@@ -1,6 +1,7 @@
 module Main where 
 
-import Data.Maybe 
+
+import Data.Char ( isDigit )
 
 type Directory = String
 type Size = Int
@@ -63,15 +64,23 @@ showFS :: DirectoryFileSize -> String
 showFS [] = ""
 showFS ((dir, size): fs) = dir ++ ": " ++ show size ++ "\n" ++ showFS fs
 
+totalSize :: [String] -> Size 
+totalSize [] = 0
+totalSize (l@(d:r):ls)
+  | isDigit d = (read (head (words l)) :: Size) + totalSize ls
+  | otherwise = totalSize ls
+
 main :: IO ()
 main = do 
   input <- readFile "files.txt"
   let ls = lines input 
   let ls' = filter (/= "$ ls") ls
   let (fs, sm) = buildDirectory ls' [] []
-  putStrLn (showFS fs)
   let sm' = transitiveSubDirectories sm
   let fs' = transitiveFileSize sm' fs
-  let less = filter (\(_, s) -> s <= 100000) fs'
-  let total = sum (map snd less)
-  putStrLn (show total)
+  putStrLn (showFS (take 10 fs))
+  putStrLn (showFS (take 10 fs'))
+
+  -- let less = filter (\(_, s) -> s <= 100000) fs'
+  -- let total = sum (map snd less)
+  -- putStrLn (show total)
