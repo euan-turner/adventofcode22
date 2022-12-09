@@ -93,23 +93,24 @@ moves ((U n):ms) hist knots head
     newHead = posPlusVector head up
     newKnots = updateKnots newHead knots
 moves ((D n):ms) hist knots head 
-  | (last newKnots) `elem` hist = moves (U (n-1):ms) hist newKnots newHead 
-  | otherwise = moves (U (n-1):ms) (last newKnots:hist) newKnots newHead
+  | (last newKnots) `elem` hist = moves (D (n-1):ms) hist newKnots newHead 
+  | otherwise = moves (D (n-1):ms) (last newKnots:hist) newKnots newHead
   where 
     newHead = posPlusVector head down
     newKnots = updateKnots newHead knots
 moves ((L n):ms) hist knots head 
-  | (last newKnots) `elem` hist = moves (U (n-1):ms) hist newKnots newHead 
-  | otherwise = moves (U (n-1):ms) (last newKnots:hist) newKnots newHead
+  | (last newKnots) `elem` hist = moves (L (n-1):ms) hist newKnots newHead 
+  | otherwise = moves (L (n-1):ms) (last newKnots:hist) newKnots newHead
   where 
     newHead = posPlusVector head left
     newKnots = updateKnots newHead knots
 moves ((R n):ms) hist knots head 
-  | (last newKnots) `elem` hist = moves (U (n-1):ms) hist newKnots newHead 
-  | otherwise = moves (U (n-1):ms) (last newKnots:hist) newKnots newHead
+  | (last newKnots) `elem` hist = moves (R (n-1):ms) hist newKnots newHead 
+  | otherwise = moves (R (n-1):ms) (last newKnots:hist) newKnots newHead
   where 
     newHead = posPlusVector head right
     newKnots = updateKnots newHead knots
+
 -- head, tail (check if tail is 2 away from head)
 tailNeedsUpdate :: Pos -> Pos -> Bool
 tailNeedsUpdate (hx, hy) (tx, ty) = max dx dy > 1
@@ -123,15 +124,14 @@ updateTail h t
   | otherwise = t
 
 updateKnots :: Pos -> [Pos] -> [Pos]
-updateKnots head [] = [head]
+updateKnots head [] = []
 updateKnots head ks@(k:ks')
   | tailNeedsUpdate head k = updateTail head k : updateKnots (updateTail head k) ks'
   | otherwise = ks
 
 main :: IO ()
 main = do 
-  input <- readFile "sample.txt"
+  input <- readFile "moves.txt"
   let fls = (formatInput . lines) input
   let visited = moves fls [] (take 9 (repeat (0,0))) (0, 0)
-  putStrLn (show (reverse visited))
   putStrLn (show (length visited))
