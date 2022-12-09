@@ -70,6 +70,46 @@ move ((R n):ms) hist tail head
     newHead = posPlusVector head right
     newTail = updateTail newHead tail
 
+moves :: [Move] -> [Pos] -> [Pos] -> Pos -> [Pos]
+moves [] hist knots head
+  | (last knots) `elem` hist = hist
+  | otherwise = (last knots) : hist
+moves ((U 0):ms) hist knots head 
+  | (last knots) `elem` hist = moves ms hist knots head 
+  | otherwise = moves ms (last knots : hist) knots head
+moves ((D 0):ms) hist knots head 
+  | (last knots) `elem` hist = moves ms hist knots head 
+  | otherwise = moves ms (last knots : hist) knots head
+moves ((L 0):ms) hist knots head 
+  | (last knots) `elem` hist = moves ms hist knots head 
+  | otherwise = moves ms (last knots : hist) knots head
+moves ((R 0):ms) hist knots head 
+  | (last knots) `elem` hist = moves ms hist knots head 
+  | otherwise = moves ms (last knots : hist) knots head
+moves ((U n):ms) hist knots head 
+  | (last newKnots) `elem` hist = moves (U (n-1):ms) hist newKnots newHead 
+  | otherwise = moves (U (n-1):ms) (last newKnots:hist) newKnots newHead
+  where 
+    newHead = posPlusVector head up
+    newKnots = updateKnots newHead knots
+moves ((D n):ms) hist knots head 
+  | (last newKnots) `elem` hist = moves (U (n-1):ms) hist newKnots newHead 
+  | otherwise = moves (U (n-1):ms) (last newKnots:hist) newKnots newHead
+  where 
+    newHead = posPlusVector head down
+    newKnots = updateKnots newHead knots
+moves ((L n):ms) hist knots head 
+  | (last newKnots) `elem` hist = moves (U (n-1):ms) hist newKnots newHead 
+  | otherwise = moves (U (n-1):ms) (last newKnots:hist) newKnots newHead
+  where 
+    newHead = posPlusVector head left
+    newKnots = updateKnots newHead knots
+moves ((R n):ms) hist knots head 
+  | (last newKnots) `elem` hist = moves (U (n-1):ms) hist newKnots newHead 
+  | otherwise = moves (U (n-1):ms) (last newKnots:hist) newKnots newHead
+  where 
+    newHead = posPlusVector head right
+    newKnots = updateKnots newHead knots
 -- head, tail (check if tail is 2 away from head)
 tailNeedsUpdate :: Pos -> Pos -> Bool
 tailNeedsUpdate (hx, hy) (tx, ty) = max dx dy > 1
@@ -82,10 +122,16 @@ updateTail h t
   | tailNeedsUpdate h t = posPlusVector t (getVector h t)
   | otherwise = t
 
+updateKnots :: Pos -> [Pos] -> [Pos]
+updateKnots head [] = [head]
+updateKnots head ks@(k:ks')
+  | tailNeedsUpdate head k = updateTail head k : updateKnots (updateTail head k) ks'
+  | otherwise = ks
+
 main :: IO ()
 main = do 
-  input <- readFile "moves.txt"
+  input <- readFile "sample.txt"
   let fls = (formatInput . lines) input
-  let visited = move fls [] (0, 0) (0, 0)
-  -- putStrLn (show (reverse visited))
+  let visited = moves fls [] (take 9 (repeat (0,0))) (0, 0)
+  putStrLn (show (reverse visited))
   putStrLn (show (length visited))
