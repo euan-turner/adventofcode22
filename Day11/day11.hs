@@ -1,6 +1,7 @@
 module Main where
 
 import Data.Char ( digitToInt, isSpace, isDigit )
+import Data.List ( sort )
 -- Id :: Int, Items :: [Int], Op :: (Int -> Int), Test :: Int, True :: Int, False :: Int, timesInspected
 data Monkey = Monkey Int [Int] (Int -> Int) Int Int Int Int
 
@@ -49,16 +50,19 @@ getTestTrueFalse m i = read ((last . words) line) :: Int
     line = m !! i
 
 monkeyBiz :: [Monkey] -> [Monkey]
-monkeyBiz monkeys = undefined 
+monkeyBiz monkeys = last (take 10001 (iterate (round 0) monkeys))
   where
-    -- remaining monkeys this round, all updated monkeys this round, updated monkeys this round
-    round :: [Monkey] -> [Monkey ] -> [Monkey] -- don't recurse over monkeys, recurse over their ids and lookup
-    round [] ms = ms
-    round (m:ms) ms' = undefined -- need to replaceMonkey in both ms and ms'
+    num = length monkeys
+    -- current monkey id, current monkeys, updated monkeys
+    round :: Int -> [Monkey ] -> [Monkey] -- don't recurse over monkeys, recurse over their ids and lookup
+    round n ms
+      | n == num = ms
+      | otherwise = round (n+1) ms''
       where 
-        (newM, toMove) = inspect m
-        -- need to replaceMonkey with newM ms'
-        -- returns [(monkey id, items)] to move, and updated monkey
+        currentM = lookUpMonkey n ms 
+        (newM, toMove) = inspect currentM
+        ms' = replaceMonkey newM ms
+        ms'' = moveItems ms' toMove
         inspect :: Monkey -> (Monkey, [(Int, Int)])
         inspect m@(Monkey id [] op tst tr fa n) = (m, [])
         inspect (Monkey id its op tst tr fa n)
@@ -66,20 +70,37 @@ monkeyBiz monkeys = undefined
           | otherwise = (m, (fa, worry) : r)
           where 
             item = head its 
-            worry = (op item) `div` 3
+            -- worry = (op item) `div` 3
+            worry = op item `mod` 9699690 -- product of all divisors, modulo arithmetic
             (m, r) = inspect (Monkey id (tail its) op tst tr fa (n+1))
-        
         moveItems :: [Monkey] -> [(Int, Int)] -> [Monkey]
-        moveItems = undefined
+        moveItems monks [] = monks 
+        moveItems monks ((i, v):ps) = moveItems (replaceMonkey newMonk monks) ps
+          where
+            (Monkey id its op tst tr fa n) = lookUpMonkey i monks 
+            newMonk = Monkey id (its ++ [v]) op tst tr fa n
 
 replaceMonkey :: Monkey -> [Monkey] -> [Monkey]
 replaceMonkey m@(Monkey id _ _ _ _ _ _) (m'@(Monkey id' _ _ _ _ _ _):ms)
   | id == id' = m:ms 
   | otherwise = m' : replaceMonkey m ms
 
+lookUpMonkey :: Int -> [Monkey] -> Monkey
+lookUpMonkey id ((m@(Monkey id' _ _ _ _ _ _)):ms)
+  | id == id' = m 
+  | otherwise = lookUpMonkey id ms
+
+mostActiveProduct :: [Monkey] -> Int 
+mostActiveProduct ms = product (take 2 ns')
+  where 
+    ns = map (\(Monkey _ _ _ _ _ _ n) -> n) ms
+    ns' = (reverse . sort) ns
+
 main :: IO ()
 main = do
   input <- readFile "monkeys.txt"
   let ls = lines input 
   let ms = formatInput ls
-  putStrLn ("")
+  let res = monkeyBiz ms 
+  mapM_ (\(Monkey id its _ _ _ _ n) -> print (show id ++ ":" ++ show n)) res
+  print (show (mostActiveProduct res))
