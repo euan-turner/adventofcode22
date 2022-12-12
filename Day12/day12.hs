@@ -1,21 +1,18 @@
 module Main where 
 
 import Data.Char ( ord )
+import Algorithm.Search ( aStar )
 type Pos = (Int, Int)
+type Graph = [(Pos, [Pos])]
 
---Find start position
---Build zipper of entire grid
---Find possible next steps
---Call recursively
---Take shortest route
-findStart :: [String] -> Int -> Pos
-findStart (l:ls) r
-  | 'S' `elem` l = (r, findIndex l 0)
-  | otherwise = findStart ls (r + 1)
+findPos :: [[Int]] -> Int -> Int -> Pos
+findPos (l:ls) t r
+  | t `elem` l = (r, findIndex l 0)
+  | otherwise = findPos ls t (r + 1)
   where 
-    findIndex :: String -> Int -> Int
+    findIndex :: [Int] -> Int -> Int
     findIndex (c:cs) col
-      | c == 'S' = col 
+      | c == t = col 
       | otherwise = findIndex cs (col + 1)
 
 traverse :: Pos -> [String] -> Int 
@@ -55,21 +52,42 @@ traverse2 xy@(x, y) xys ls
     up = if (y > 0) && (ls !! (y - 1) !! x <= succ h) then traverse2 (x, y - 1) (xy:xys) ls else 10000
     down = if (y < height) && (ls !! (y + 1) !! x <= succ h) then traverse2 (x, y + 1) (xy:xys) ls else 10000
 
+genGraph :: [[Int]] -> Pos -> Graph
+genGraph hs n@(x, y)
+  | y == length hs = []
+  | otherwise = (n, canReach) : genGraph hs nxt 
+  where
+    inMap = filter (
+      \(a, b) -> a >= 0 && a <= length (head hs) - 1 && b >= 0 && b <= length hs - 1
+      ) [(x+1, y), (x-1, y), (x, y+1), (x, y-1)]
+    canReach = filter (\(a, b) -> hs !! b !! a <= hs !! y !! x + 1) inMap
+    nxt = if (x+1) < (length.head) hs then (x+1, y) else (0, y+1)
+
+findRoutes :: [[Int]] -> (Int, [Pos])
+findRoutes hs =  
+  where
+    start = findPos hs (-1) 0
+    (xt, yt) = findPos hs 26 0
+    ns :: Pos -> [Pos]
+    ns (x, y) = canReach 
+      where 
+        inMap = filter (\(a, b) -> a >= 0 && a <= length (head hs) - 1 && b >= 0 && b <= length hs - 1) [(x+1, y), (x-1, y), (x, y+1), (x, y-1)]
+        canReach = filter (\(a, b) -> hs !! b !! a <= hs !! y !! x + 1) inMap
+    tCost :: Pos -> Pos -> Int
+    tCost _ _ = 1
+    rCost :: Pos -> Int
+    rCost (x, y) = abs (xt - x) + abs (yt - y)
 
 formatLine :: String -> [Int]
 formatLine [] = []
-formatLine ('S':cs) = 0 : formatLine cs
+formatLine ('S':cs) = -1 : formatLine cs
 formatLine ('E':cs) = 26 : formatLine cs 
 formatLine (c:cs) = ord c - ord 'a' : formatLine cs
 
 main :: IO ()
 main = do
-  input <- readFile "hills.txt"
+  input <- readFile "sample.txt"
   let ls = lines input
-  let start = findStart ls 0
   let f = map formatLine ls
-  let dist = traverse2 start [] f
-  putStrLn (show dist)
-
--- May need to do A*
--- https://www.geeksforgeeks.org/a-search-algorithm/
+  let graph = genGraph f (0,0)
+  mapM_ print graph
