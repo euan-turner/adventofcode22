@@ -52,5 +52,19 @@ def partOne():
   pairs = pairUp(form)
   inRightOrder(pairs)
 
+def partTwo():
+  file = open("./Day13/packets.txt")
+  form = format(file)
+  s, e = [[2]], [[6]]
+  S, E = 1, 2
+  for f in form:
+    if compare(s, f) == -1:
+      S += 1
+    if compare(e, f) == -1:
+      E += 1
+  print(S*E)
+
+  ## Need to sort list using compare
+
 if __name__ == "__main__":
-  partOne()
+  partTwo()
