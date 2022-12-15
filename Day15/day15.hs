@@ -29,20 +29,28 @@ checkRow sbs minX maxX y = length (filter (`notElem` bs) ps')
     ps = map (\x -> (x, y)) xs
     ps' = filter (cannotContain sbs) ps
     bs = map snd sbs
-    cannotContain :: [(Pos, Pos)] -> Pos -> Bool 
-    cannotContain [] _  = False
-    cannotContain ((s, b):ps) p = 
-      taxiDist s p <= taxiDist s b || cannotContain ps p
+-- True if position cannot contain a beacon (i.e. is within zone of a sensor-beacon pair)
+cannotContain :: [(Pos, Pos)] -> Pos -> Bool 
+cannotContain [] _  = False
+cannotContain ((s, b):ps) p = 
+  taxiDist s p <= taxiDist s b || cannotContain ps p
 
 
+-- Part 1
+-- main :: IO ()
+-- main = do
+--   input <- readFile "beacons.txt"
+--   let f = format (lines input)
+--   let (minX, maxX) = xBounds f
+--   let maxDist = maximum (map (uncurry taxiDist) f)
+--   let n = checkRow f (minX - maxDist) (maxX + maxDist) 2000000
+--   print n
+  
+
+-- Part 2
+-- 0 <= x,y <= 4000000 (0 and 20 for sample)
+-- Multiple x and y
 main :: IO ()
 main = do
-  input <- readFile "beacons.txt"
-  let f = format (lines input)
-  let (minX, maxX) = xBounds f
-  let maxDist = maximum (map (uncurry taxiDist) f) 
-  print (minX, maxX)
-  print maxDist
-  let n = checkRow f (minX - maxDist * 2) (maxX + maxDist * 2) 10
-  print n
-  
+  input <- readFile "sample.txt"
+  putStrLn("")
