@@ -35,6 +35,13 @@ cannotContain [] _  = False
 cannotContain ((s, b):ps) p = 
   taxiDist s p <= taxiDist s b || cannotContain ps p
 
+findBeacon :: Int -> Int -> [(Pos, Pos)] -> Pos
+findBeacon min max sbs = head ((filter (not . cannotContain sbs)) toCheck)
+  where 
+    toCheck = do 
+      x <- [min..max]
+      y <- [min..max]
+      return (x, y)
 
 -- Part 1
 -- main :: IO ()
@@ -52,5 +59,6 @@ cannotContain ((s, b):ps) p =
 -- Multiple x and y
 main :: IO ()
 main = do
-  input <- readFile "sample.txt"
-  putStrLn("")
+  input <- readFile "beacons.txt"
+  let f = format (lines input)
+  print (findBeacon 0 4000000 f)
