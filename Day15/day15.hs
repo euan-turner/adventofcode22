@@ -1,6 +1,6 @@
 module Main where 
 
-import Data.List ( findIndices )
+import Data.List ( findIndices, nub )
 type Pos = (Int, Int)
 
 format :: [String] -> [(Pos, Pos)]
@@ -42,6 +42,24 @@ findBeacon min max sbs = head ((filter (not . cannotContain sbs)) toCheck)
       x <- [min..max]
       y <- [min..max]
       return (x, y)
+
+-- Debug looking at: findZone ((0,0), (3,0))
+findZone :: (Pos, Pos) -> [Pos]
+findZone (s, b) = genZone [s] (genNext [s] s)
+  where 
+    r = taxiDist s b 
+
+    genZone :: [Pos] -> [Pos] -> [Pos]
+    genZone seen next = seen' ++ nub (concatMap (genNext seen') next)
+      where
+        seen' = seen ++ next 
+
+    genNext :: [Pos] -> Pos -> [Pos]
+    genNext seen (x, y) = next' 
+      where 
+        next = filter (\p -> taxiDist s p <= r) [(x+1, y), (x-1, y), (x, y+1), (x, y-1)]
+        next' = filter (`notElem` seen) next
+
 
 -- Part 1
 -- main :: IO ()
