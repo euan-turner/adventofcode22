@@ -43,7 +43,7 @@ findBeacon min max sbs = head ((filter (not . cannotContain sbs)) toCheck)
       y <- [min..max]
       return (x, y)
 
--- Debug looking at: findZone ((0,0), (3,0))
+-- Debug looking at: findZone ((0,0), (3,0)), and findZone ((0,0), (4,0))
 findZone :: (Pos, Pos) -> [Pos]
 findZone (s, b) = genZone [s] (genNext [s] s)
   where 
